@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Slab 1a — Data Analysis with Pandas & Matplotlib</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f5f6fa;color:#1a1a2e;padding:2rem}
+h1{font-size:1.5rem;font-weight:600;margin-bottom:0.25rem;color:#1a1a2e}
+.subtitle{font-size:0.85rem;color:#666;margin-bottom:1.5rem}
+.card{background:#fff;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.metric{background:#f0f4ff;border-radius:8px;padding:1rem}
+.ml{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.mv{font-size:1.4rem;font-weight:600;color:#1a1a2e}
+.ctrl{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.ctrl label{font-size:13px;color:#555}
+select,input[type=number]{padding:5px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff}
+.chart-wrap{position:relative;width:100%}
+.ins{background:#e8f4fd;border-left:4px solid #2980b9;border-radius:0 8px 8px 0;padding:12px 16px;font-size:13px;color:#2c3e50;margin-top:1rem;line-height:1.7}
+.leg{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:12px;color:#555}
+.leg span{display:flex;align-items:center;gap:5px}
+.ld{width:12px;height:12px;border-radius:3px;display:inline-block}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 10px;background:#f8f9fa;border-bottom:2px solid #dee2e6;color:#666;font-weight:600}
+td{padding:6px 10px;border-bottom:1px solid #f0f0f0;color:#1a1a2e}
+tr:hover td{background:#fafbff}
+h2{font-size:1rem;font-weight:600;margin:1.5rem 0 .75rem;color:#1a1a2e}
+</style>
+</head>
+<body>
+<h1>📊 Slab 1a — Data Analysis</h1>
+<p class="subtitle">Pandas + Matplotlib — CSV analysis with bar charts, scatter plots, and heatmaps</p>
+
+<div class="card">
+  <div class="ctrl">
+    <label>Column: <select id="col" onchange="upd()">
+      <option value="sales">Sales</option><option value="profit">Profit</option>
+      <option value="units">Units Sold</option><option value="customers">Customers</option>
+    </select></label>
+    <label>Chart type: <select id="ct" onchange="upd()">
+      <option value="bar">Bar Chart</option><option value="line">Line Chart</option><option value="scatter">Scatter Plot</option>
+    </select></label>
+  </div>
+  <div id="mets" class="grid4"></div>
+  <h2>Monthly Trend</h2>
+  <div class="leg" id="leg1"></div>
+  <div class="chart-wrap" style="height:280px"><canvas id="c1" role="img" aria-label="Monthly data chart"></canvas></div>
+  <div class="ins" id="ins1"></div>
+</div>
+
+<div class="card">
+  <h2>Heatmap — All Metrics (Normalised 0–100%)</h2>
+  <div class="leg">
+    <span><span class="ld" style="background:#3498db"></span>Sales</span>
+    <span><span class="ld" style="background:#e74c3c"></span>Profit</span>
+    <span><span class="ld" style="background:#27ae60"></span>Units</span>
+    <span><span class="ld" style="background:#9b59b6"></span>Customers</span>
+  </div>
+  <div class="chart-wrap" style="height:220px"><canvas id="c2" role="img" aria-label="Heatmap of all metrics normalised"></canvas></div>
+</div>
+
+<div class="card">
+  <h2>Full Dataset Preview</h2>
+  <table id="dtab"></table>
+</div>
+
+<script>
+const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CD={
+  sales:[42000,38500,51000,47000,55000,61000,58000,63000,54000,49000,67000,72000],
+  profit:[8400,7200,10500,9100,11200,13000,11600,13800,10800,9500,14200,16000],
+  units:[210,185,260,240,280,320,295,340,275,245,350,390],
+  customers:[850,790,980,920,1050,1200,1130,1280,1050,960,1350,1490]
+};
+const CL={sales:'Sales ($)',profit:'Profit ($)',units:'Units Sold',customers:'Customers'};
+const COLS=['#3498db','#e74c3c','#27ae60','#9b59b6'];
+let c1,c2;
+
+function fmt(v,c){return(c==='sales'||c==='profit')?'$'+v.toLocaleString():v.toLocaleString();}
+
+function upd(){
+  const c=document.getElementById('col').value,tp=document.getElementById('ct').value,d=CD[c];
+  const avg=d.reduce((a,b)=>a+b,0)/d.length,mx=Math.max(...d),mn=Math.min(...d),tot=d.reduce((a,b)=>a+b,0);
+  const std=Math.sqrt(d.map(x=>(x-avg)**2).reduce((a,b)=>a+b,0)/d.length);
+  document.getElementById('mets').innerHTML=`
+    <div class="metric"><div class="ml">Average</div><div class="mv">${fmt(Math.round(avg),c)}</div></div>
+    <div class="metric"><div class="ml">Total</div><div class="mv">${fmt(tot,c)}</div></div>
+    <div class="metric"><div class="ml">Maximum</div><div class="mv">${fmt(mx,c)}</div></div>
+    <div class="metric"><div class="ml">Std Dev</div><div class="mv">${fmt(Math.round(std),c)}</div></div>`;
+  const trend=((d[11]-d[0])/d[0]*100).toFixed(1),pk=MO[d.indexOf(mx)];
+  document.getElementById('ins1').innerHTML=`<strong>📌 Key Insights:</strong> ${CL[c]} shows a <strong>${trend>0?'positive':'negative'} trend of ${trend}%</strong> from Jan to Dec. Peak performance in <strong>${pk}</strong> (${fmt(mx,c)}). Q4 average is ${(((d[9]+d[10]+d[11])/3/avg-1)*100).toFixed(1)}% above the annual mean — indicating strong year-end momentum. The data pattern suggests consistent seasonal growth typical of retail/business cycles.`;
+  document.getElementById('leg1').innerHTML=`<span><span class="ld" style="background:#3498db"></span>${CL[c]}</span>`;
+  if(c1)c1.destroy();
+  const issc=tp==='scatter',ctx=document.getElementById('c1').getContext('2d');
+  c1=new Chart(ctx,{type:issc?'scatter':tp,data:{labels:issc?undefined:MO,datasets:[{label:CL[c],data:issc?d.map((y,i)=>({x:i+1,y})):d,backgroundColor:'#3498db55',borderColor:'#3498db',borderWidth:2,pointBackgroundColor:'#3498db',fill:false,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#888'}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#888',callback:v=>(c==='sales'||c==='profit')?'$'+v.toLocaleString():v}}}}});
+  if(c2)c2.destroy();
+  const ctx2=document.getElementById('c2').getContext('2d');
+  const keys=Object.keys(CD);
+  const norm=keys.map(k=>{const dd=CD[k],mn2=Math.min(...dd),mx2=Math.max(...dd);return dd.map(v=>+((v-mn2)/(mx2-mn2)*100).toFixed(1));});
+  c2=new Chart(ctx2,{type:'bar',data:{labels:MO,datasets:keys.map((k,i)=>({label:CL[k],data:norm[i],backgroundColor:COLS[i]+'99',borderColor:COLS[i],borderWidth:1,stack:'s'}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,ticks:{color:'#888'},grid:{color:'rgba(0,0,0,.05)'}},y:{stacked:true,ticks:{color:'#888',callback:v=>v+'%'},grid:{color:'rgba(0,0,0,.05)'}}}}});
+  document.getElementById('dtab').innerHTML='<thead><tr><th>Month</th>'+keys.map(k=>`<th>${CL[k]}</th>`).join('')+'</tr></thead><tbody>'+MO.map((m,i)=>`<tr><td><strong>${m}</strong></td>${keys.map(k=>`<td>${fmt(CD[k][i],k)}</td>`).join('')}</tr>`).join('')+'</tbody>';
+}
+upd();
+</script>
+</body></html>
